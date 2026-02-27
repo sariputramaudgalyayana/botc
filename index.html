@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BotC — Clocktower</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Cormorant+Garamond:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0e0b14;
+    color: #c8bda0;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(60,40,90,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(60,40,90,0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative;
+    text-align: center;
+    padding: 16px 16px 20px;
+    background: linear-gradient(180deg, #1c1528 0%, #0e0b14 100%);
+    z-index: 1;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 30px solid transparent;
+    border-right: 30px solid transparent;
+    border-top: 12px solid #0e0b14;
+  }
+  header h1 {
+    font-family: 'Uncial Antiqua', Georgia, serif;
+    font-size: 22px;
+    color: #c9a84c;
+    text-shadow: 0 0 20px rgba(201,168,76,0.25);
+    letter-spacing: 3px;
+  }
+
+  /* ── Tally ── */
+  .tally {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 12px;
+    z-index: 1;
+    position: relative;
+  }
+  .tally-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 8px;
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 4px;
+    background: rgba(20,15,30,0.8);
+    min-width: 48px;
+  }
+  .tally-item .count { font-size: 20px; font-weight: 700; line-height: 1; }
+  .tally-item .label { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; margin-top: 2px; }
+  .tally-item.town .count { color: #5b8fc9; }
+  .tally-item.out .count { color: #4a9a7a; }
+  .tally-item.min .count { color: #c97050; }
+  .tally-item.dem .count { color: #c94040; }
+  .tally-item.trav .count { color: #b090d0; }
+
+  /* ── Board ── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    padding: 20px;
+  }
+  .board {
+    position: relative;
+    width: min(82vw, 82vh - 200px);
+    height: min(82vw, 82vh - 200px);
+    max-width: 480px;
+    max-height: 480px;
+  }
+  .board::before {
+    content: '';
+    position: absolute;
+    inset: 5%;
+    border-radius: 50%;
+    border: 2px solid rgba(201,168,76,0.06);
+    background: radial-gradient(circle, rgba(40,25,65,0.3) 0%, transparent 70%);
+  }
+  .board-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px; height: 40px;
+    opacity: 0.08;
+  }
+  .board-center::before, .board-center::after {
+    content: '';
+    position: absolute;
+    background: #c9a84c;
+  }
+  .board-center::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+  .board-center::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+
+  /* ── Token ── */
+  .token {
+    position: absolute;
+    width: 68px; height: 68px;
+    margin-left: -34px; margin-top: -34px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .token-inner {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #201838 0%, #140e22 100%);
+    border: 2px solid #3a2a5c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .token-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%; height: 40%;
+    background: radial-gradient(ellipse at 50% 0%, rgba(100,70,160,0.15) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  .token .seat-number {
+    font-family: 'Uncial Antiqua', Georgia, serif;
+    font-size: 20px;
+    color: #c9a84c;
+    line-height: 1;
+    text-shadow: 0 0 8px rgba(201,168,76,0.2);
+  }
+
+  /* Single role */
+  .token .role-guess-single {
+    font-size: 7px; color: #9a8a7a;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-top: 2px; max-width: 58px;
+    text-align: center; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Pie chart role guesses */
+  .token .role-guesses {
+    position: absolute; inset: 0;
+    border-radius: 50%; pointer-events: none; z-index: 2;
+  }
+  .token .role-guess {
+    position: absolute; font-size: 7px; color: #c8bda0;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    line-height: 1; text-align: center;
+    max-width: 38px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+    transform: translate(-50%, -50%);
+  }
+  .pie-overlay {
+    position: absolute; inset: 0;
+    border-radius: 50%; pointer-events: none; z-index: 0;
+  }
+  .pie-divider {
+    position: absolute; top: 50%; left: 50%;
+    width: 50%; height: 1px;
+    background: rgba(201,168,76,0.18);
+    transform-origin: 0% 50%;
+    pointer-events: none; z-index: 1;
+  }
+  .token.has-pie .seat-number { font-size: 17px; position: relative; z-index: 2; }
+  .token.has-pie .token-inner::before { z-index: 3; }
+  .token.has-pie-3 .role-guess { font-size: 5.5px; max-width: 28px; }
+  .token.has-pie-3 .seat-number { font-size: 15px; }
+
+  /* Alignment colors */
+  .token.townsfolk .token-inner { border-color: #4a6aaa; box-shadow: inset 0 0 20px rgba(70,100,170,0.15), 0 0 12px rgba(70,100,170,0.2); }
+  .token.townsfolk .seat-number { color: #7aaae0; }
+  .token.outsider .token-inner { border-color: #3a7a5a; box-shadow: inset 0 0 20px rgba(58,122,90,0.15), 0 0 12px rgba(58,122,90,0.2); }
+  .token.outsider .seat-number { color: #5aba8a; }
+  .token.minion .token-inner { border-color: #aa6040; box-shadow: inset 0 0 20px rgba(170,96,64,0.15), 0 0 12px rgba(170,96,64,0.2); }
+  .token.minion .seat-number { color: #da8a60; }
+  .token.demon .token-inner { border-color: #8a2a2a; box-shadow: inset 0 0 20px rgba(138,42,42,0.2), 0 0 12px rgba(138,42,42,0.3); }
+  .token.demon .seat-number { color: #da5050; }
+  .token.traveler .token-inner { border-color: #6a5a8a; box-shadow: inset 0 0 20px rgba(120,90,170,0.15), 0 0 12px rgba(120,90,170,0.2); }
+  .token.traveler .seat-number { color: #b090d0; }
+
+  /* Dead */
+  .token.dead .token-inner { filter: saturate(0.2) brightness(0.5); }
+  .token.dead::after {
+    content: '\u271D';
+    position: absolute; top: -4px; right: -2px;
+    font-size: 16px; color: #8a2020;
+    text-shadow: 0 0 6px rgba(138,32,32,0.6);
+    z-index: 2;
+  }
+
+  /* ── Footer ── */
+  footer {
+    flex-shrink: 0;
+    padding: 12px 16px 16px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    z-index: 1;
+  }
+  .btn {
+    padding: 10px 24px;
+    border: 1px solid #3a2a5c;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #1e1530 0%, #120c1e 100%);
+    color: #c9a84c;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer;
+    min-height: 44px; min-width: 44px;
+    position: relative;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn:active { background: linear-gradient(180deg, #2a1e40 0%, #1a1230 100%); border-color: #4a3a6c; }
+  .btn::before {
+    content: '';
+    position: absolute; top: -1px; left: 20%; right: 20%; height: 1px;
+    background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+  }
+
+  /* ── Overlay ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(6,4,10,0.75);
+    z-index: 10; opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+
+  /* ── Sheet ── */
+  .sheet {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    max-height: 85vh;
+    background: linear-gradient(180deg, #1c1528 0%, #120e1c 100%);
+    border-top: 1px solid rgba(201,168,76,0.15);
+    border-radius: 16px 16px 0 0;
+    z-index: 11;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-handle {
+    display: flex; justify-content: center;
+    padding: 12px 0 4px;
+    position: sticky; top: 0;
+    background: linear-gradient(180deg, #1c1528 90%, transparent);
+    z-index: 1;
+  }
+  .sheet-handle span { width: 36px; height: 4px; border-radius: 2px; background: rgba(201,168,76,0.2); }
+  .sheet-title {
+    font-family: 'Uncial Antiqua', Georgia, serif;
+    font-size: 18px; color: #c9a84c;
+    text-align: center; padding: 4px 16px 16px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(201,168,76,0.2);
+  }
+  .sheet-divider {
+    height: 1px; margin: 0 24px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.12), transparent);
+  }
+
+  /* ── Setup sheet ── */
+  .setup-section { padding: 16px 20px; }
+  .setup-section-label {
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(201,168,76,0.4);
+    margin-bottom: 12px;
+  }
+  .stepper { display: flex; align-items: center; justify-content: center; gap: 20px; }
+  .stepper-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid #3a2a5c;
+    background: linear-gradient(145deg, #201838 0%, #140e22 100%);
+    color: #c9a84c; font-size: 22px;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s;
+  }
+  .stepper-btn:active { border-color: #5a4a7c; }
+  .stepper-value {
+    font-family: 'Uncial Antiqua', Georgia, serif;
+    font-size: 36px; color: #c9a84c;
+    min-width: 50px; text-align: center;
+    text-shadow: 0 0 15px rgba(201,168,76,0.2);
+  }
+  .role-count-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+  .role-count-row + .role-count-row { border-top: 1px solid rgba(255,255,255,0.03); }
+  .role-count-label { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .role-count-label .color-pip { width: 10px; height: 10px; border-radius: 50%; }
+  .color-pip.town { background: #5b8fc9; }
+  .color-pip.out { background: #4a9a7a; }
+  .color-pip.min { background: #c97050; }
+  .color-pip.dem { background: #c94040; }
+  .color-pip.trav { background: #b090d0; }
+  .mini-stepper { display: flex; align-items: center; gap: 12px; }
+  .mini-stepper-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid #3a2a5c; background: rgba(20,15,30,0.8);
+    color: #c9a84c; font-size: 16px;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mini-stepper-val { font-size: 18px; font-weight: 700; min-width: 20px; text-align: center; color: #c8bda0; }
+  .sheet-confirm {
+    display: block; width: calc(100% - 40px);
+    margin: 16px 20px 24px; padding: 14px;
+    border: 1px solid rgba(201,168,76,0.3); border-radius: 4px;
+    background: linear-gradient(180deg, #2a1e3c 0%, #1a1228 100%);
+    color: #c9a84c;
+    font-family: 'Uncial Antiqua', Georgia, serif;
+    font-size: 15px; letter-spacing: 2px;
+    cursor: pointer; min-height: 48px; position: relative;
+  }
+  .sheet-confirm::before {
+    content: '';
+    position: absolute; top: -1px; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3), transparent);
+  }
+  .sheet-reset {
+    display: block; width: calc(100% - 40px);
+    margin: 0 20px 8px; padding: 10px;
+    border: 1px solid rgba(138,32,32,0.3); border-radius: 4px;
+    background: transparent;
+    color: rgba(138,32,32,0.6);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; min-height: 40px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .sheet-reset:active { color: #c94040; border-color: rgba(201,64,64,0.5); }
+
+  /* ── Roles sheet ── */
+  .roles-section { padding: 12px 20px; }
+  .roles-group-header {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+    padding: 8px 0 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .roles-group-header .color-pip { width: 8px; height: 8px; border-radius: 50%; }
+  .roles-group-header .line { flex: 1; height: 1px; background: rgba(255,255,255,0.04); }
+  .roles-grid { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px; }
+  .role-chip {
+    padding: 8px 14px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(20,15,30,0.6);
+    font-size: 12px; font-weight: 600; color: #c8bda0;
+    cursor: pointer; min-height: 36px;
+    display: flex; align-items: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .role-chip:active { background: rgba(30,22,44,0.8); }
+  .role-chip.selected { border-color: rgba(201,168,76,0.4); background: rgba(201,168,76,0.08); color: #c9a84c; }
+  .role-chip.town-chip.selected { border-color: rgba(91,143,201,0.5); background: rgba(91,143,201,0.08); color: #7aaae0; }
+  .role-chip.out-chip.selected { border-color: rgba(74,154,122,0.5); background: rgba(74,154,122,0.08); color: #5aba8a; }
+  .role-chip.min-chip.selected { border-color: rgba(201,112,80,0.5); background: rgba(201,112,80,0.08); color: #da8a60; }
+  .role-chip.dem-chip.selected { border-color: rgba(201,64,64,0.5); background: rgba(201,64,64,0.08); color: #da5050; }
+  .role-chip.trav-chip.selected { border-color: rgba(176,144,208,0.5); background: rgba(176,144,208,0.08); color: #b090d0; }
+
+  .roles-player-indicator {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 0 20px 8px;
+  }
+  .roles-player-seat {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(145deg, #201838 0%, #140e22 100%);
+    border: 2px solid #3a2a5c;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Uncial Antiqua', Georgia, serif;
+    font-size: 18px; color: #c9a84c;
+  }
+  .roles-player-text { font-size: 13px; color: rgba(200,190,160,0.5); letter-spacing: 1px; }
+
+  /* Death toggle button in roles sheet */
+  .death-toggle {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 8px 16px;
+    margin: 0 auto 8px;
+    border: 1px solid rgba(138,32,32,0.3); border-radius: 4px;
+    background: transparent;
+    color: rgba(200,190,160,0.5);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; min-height: 36px;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .death-toggle.is-dead {
+    border-color: rgba(138,32,32,0.5);
+    background: rgba(138,32,32,0.08);
+    color: #c94040;
+  }
+  .death-toggle:active { border-color: rgba(138,32,32,0.6); }
+
+  /* Vote toggle */
+  .vote-toggle {
+    display: none; align-items: center; justify-content: center;
+    gap: 6px; padding: 6px 12px;
+    margin: 0 auto 8px;
+    border: 1px solid rgba(201,168,76,0.2); border-radius: 4px;
+    background: transparent;
+    color: rgba(200,190,160,0.4);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; min-height: 32px;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .vote-toggle.visible { display: flex; }
+  .vote-toggle.has-vote {
+    border-color: rgba(201,168,76,0.4);
+    background: rgba(201,168,76,0.06);
+    color: #c9a84c;
+  }
+
+  .role-add { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .role-add-input {
+    flex: 1; height: 36px; padding: 0 12px;
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 4px;
+    background: rgba(14,10,22,0.6); color: #c8bda0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .role-add-input::placeholder { color: rgba(200,190,160,0.25); font-style: italic; }
+  .role-add-input:focus { border-color: rgba(201,168,76,0.3); }
+  .role-add-btn {
+    width: 36px; height: 36px; flex-shrink: 0;
+    border: 1px solid rgba(201,168,76,0.2); border-radius: 4px;
+    background: rgba(201,168,76,0.06); color: #c9a84c;
+    font-size: 18px; font-family: 'Cormorant Garamond', Georgia, serif;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .role-add-btn:active { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.4); }
+
+  .sheet-bottom-pad { height: env(safe-area-inset-bottom, 8px); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Clocktower</h1>
+</header>
+
+<div class="tally" id="tally">
+  <div class="tally-item town"><span class="count" id="tally-town">0</span><span class="label">Town</span></div>
+  <div class="tally-item out"><span class="count" id="tally-out">0</span><span class="label">Out</span></div>
+  <div class="tally-item min"><span class="count" id="tally-min">0</span><span class="label">Min</span></div>
+  <div class="tally-item dem"><span class="count" id="tally-dem">0</span><span class="label">Dem</span></div>
+  <div class="tally-item trav"><span class="count" id="tally-trav">0</span><span class="label">Trav</span></div>
+</div>
+
+<main>
+  <div class="board" id="board">
+    <div class="board-center"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="btn" id="btn-setup">Setup</button>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- Setup Sheet -->
+<div class="sheet" id="sheet-setup">
+  <div class="sheet-handle"><span></span></div>
+  <div class="sheet-title">Setup</div>
+  <div class="sheet-divider"></div>
+
+  <div class="setup-section">
+    <div class="setup-section-label">Players</div>
+    <div class="stepper">
+      <button class="stepper-btn" id="players-minus">&minus;</button>
+      <span class="stepper-value" id="players-value">7</span>
+      <button class="stepper-btn" id="players-plus">+</button>
+    </div>
+  </div>
+
+  <div class="sheet-divider"></div>
+
+  <div class="setup-section">
+    <div class="setup-section-label">Role Distribution</div>
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip town"></span>Townsfolk</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn" data-cat="townsfolk" data-dir="-1">&minus;</button>
+        <span class="mini-stepper-val" id="dist-townsfolk">5</span>
+        <button class="mini-stepper-btn" data-cat="townsfolk" data-dir="1">+</button>
+      </div>
+    </div>
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip out"></span>Outsiders</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn" data-cat="outsiders" data-dir="-1">&minus;</button>
+        <span class="mini-stepper-val" id="dist-outsiders">0</span>
+        <button class="mini-stepper-btn" data-cat="outsiders" data-dir="1">+</button>
+      </div>
+    </div>
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip min"></span>Minions</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn" data-cat="minions" data-dir="-1">&minus;</button>
+        <span class="mini-stepper-val" id="dist-minions">1</span>
+        <button class="mini-stepper-btn" data-cat="minions" data-dir="1">+</button>
+      </div>
+    </div>
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip dem"></span>Demons</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn" data-cat="demons" data-dir="-1">&minus;</button>
+        <span class="mini-stepper-val" id="dist-demons">1</span>
+        <button class="mini-stepper-btn" data-cat="demons" data-dir="1">+</button>
+      </div>
+    </div>
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip trav"></span>Travelers</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn" data-cat="travelers" data-dir="-1">&minus;</button>
+        <span class="mini-stepper-val" id="dist-travelers">0</span>
+        <button class="mini-stepper-btn" data-cat="travelers" data-dir="1">+</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="sheet-confirm" id="btn-begin">Begin</button>
+  <button class="sheet-reset" id="btn-reset">Reset Game</button>
+  <div class="sheet-bottom-pad"></div>
+</div>
+
+<!-- Roles Sheet -->
+<div class="sheet" id="sheet-roles">
+  <div class="sheet-handle"><span></span></div>
+  <div class="sheet-title">Assign Role</div>
+
+  <div class="roles-player-indicator">
+    <div class="roles-player-seat" id="roles-seat">1</div>
+    <span class="roles-player-text">Select role guesses</span>
+  </div>
+
+  <button class="death-toggle" id="death-toggle">Mark Dead</button>
+  <button class="vote-toggle" id="vote-toggle">Ghost Vote</button>
+
+  <div class="sheet-divider"></div>
+
+  <div id="roles-content"></div>
+
+  <div class="sheet-bottom-pad"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// DATA
+// ══════════════════════════════════════
+
+const ROLES = {
+  townsfolk: ['Washerwoman','Librarian','Investigator','Chef','Empath','Fortune Teller','Undertaker','Monk','Ravenkeeper','Virgin','Slayer','Soldier','Mayor'],
+  outsider: ['Butler','Drunk','Recluse','Saint'],
+  minion: ['Poisoner','Spy','Scarlet Woman','Baron'],
+  demon: ['Imp'],
+  traveler: ['Scapegoat','Gunslinger','Beggar','Bureaucrat','Thief']
+};
+
+const CATEGORY_LABELS = {
+  townsfolk: { name: 'Townsfolk', color: '#5b8fc9', chipClass: 'town-chip', pipClass: 'town' },
+  outsider:  { name: 'Outsiders', color: '#4a9a7a', chipClass: 'out-chip',  pipClass: 'out' },
+  minion:    { name: 'Minions',   color: '#c97050', chipClass: 'min-chip',  pipClass: 'min' },
+  demon:     { name: 'Demons',    color: '#c94040', chipClass: 'dem-chip',  pipClass: 'dem' },
+  traveler:  { name: 'Travelers', color: '#b090d0', chipClass: 'trav-chip', pipClass: 'trav' }
+};
+
+// Maps category key → alignment class for tokens
+const CAT_TO_ALIGNMENT = {
+  townsfolk: 'townsfolk',
+  outsider: 'outsider',
+  minion: 'minion',
+  demon: 'demon',
+  traveler: 'traveler'
+};
+
+// Default distributions per player count (townsfolk, outsiders, minions, demons)
+const DEFAULT_DIST = {
+  5:  [3,0,1,1], 6:  [3,1,1,1], 7:  [5,0,1,1], 8:  [5,1,1,1],
+  9:  [5,2,1,1], 10: [7,0,2,1], 11: [7,1,2,1], 12: [7,2,2,1],
+  13: [9,0,3,1], 14: [9,1,3,1], 15: [9,2,3,1], 16: [9,3,3,1],
+  17: [9,4,3,1], 18: [9,5,3,1], 19: [9,6,3,1], 20: [9,7,3,1]
+};
+
+// Build a role → category lookup
+const ROLE_CATEGORY = {};
+for (const [cat, roles] of Object.entries(ROLES)) {
+  for (const r of roles) ROLE_CATEGORY[r] = cat;
+}
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+
+const STORAGE_KEY = 'botc-state';
+const STATE_VERSION = 1;
+
+function defaultState() {
+  const d = DEFAULT_DIST[7];
+  return {
+    version: STATE_VERSION,
+    phase: 'setup',
+    playerCount: 7,
+    distribution: { townsfolk: d[0], outsiders: d[1], minions: d[2], demons: d[3], travelers: 0 },
+    players: [],
+    customRoles: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] }
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (s.version !== STATE_VERSION) return null;
+    return s;
+  } catch { return null; }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState() || defaultState();
+
+// Ensure customRoles exists for loaded states
+if (!state.customRoles) {
+  state.customRoles = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
+}
+
+// Rebuild ROLE_CATEGORY with custom roles
+function rebuildRoleCategory() {
+  // Reset to built-in
+  for (const [cat, roles] of Object.entries(ROLES)) {
+    for (const r of roles) ROLE_CATEGORY[r] = cat;
+  }
+  // Add custom
+  for (const [cat, roles] of Object.entries(state.customRoles)) {
+    for (const r of roles) ROLE_CATEGORY[r] = cat;
+  }
+}
+rebuildRoleCategory();
+
+// Current seat being edited in roles sheet
+let currentSeat = null;
+
+// ══════════════════════════════════════
+// DOM REFS
+// ══════════════════════════════════════
+
+const $board = document.getElementById('board');
+const $overlay = document.getElementById('overlay');
+const $sheetSetup = document.getElementById('sheet-setup');
+const $sheetRoles = document.getElementById('sheet-roles');
+const $playersValue = document.getElementById('players-value');
+const $btnBegin = document.getElementById('btn-begin');
+const $rolesSeat = document.getElementById('roles-seat');
+const $rolesContent = document.getElementById('roles-content');
+const $deathToggle = document.getElementById('death-toggle');
+const $voteToggle = document.getElementById('vote-toggle');
+
+// ══════════════════════════════════════
+// SHEETS
+// ══════════════════════════════════════
+
+function openSheet(sheet) {
+  $overlay.classList.add('open');
+  sheet.classList.add('open');
+}
+
+function closeAll() {
+  $overlay.classList.remove('open');
+  $sheetSetup.classList.remove('open');
+  $sheetRoles.classList.remove('open');
+  currentSeat = null;
+}
+
+$overlay.addEventListener('click', closeAll);
+document.querySelectorAll('.sheet-handle').forEach(h => h.addEventListener('click', closeAll));
+
+// ══════════════════════════════════════
+// RENDER: TALLY
+// ══════════════════════════════════════
+
+function renderTally() {
+  document.getElementById('tally-town').textContent = state.distribution.townsfolk;
+  document.getElementById('tally-out').textContent = state.distribution.outsiders;
+  document.getElementById('tally-min').textContent = state.distribution.minions;
+  document.getElementById('tally-dem').textContent = state.distribution.demons;
+  document.getElementById('tally-trav').textContent = state.distribution.travelers;
+}
+
+// ══════════════════════════════════════
+// RENDER: BOARD
+// ══════════════════════════════════════
+
+function deriveAlignment(player) {
+  if (!player.roles || player.roles.length === 0) return null;
+  const cat = ROLE_CATEGORY[player.roles[0]];
+  return cat ? CAT_TO_ALIGNMENT[cat] : null;
+}
+
+function renderToken(p, i, total) {
+  const angle = (2 * Math.PI * i / total) - Math.PI / 2;
+  const radius = 42;
+  const x = 50 + radius * Math.cos(angle);
+  const y = 50 + radius * Math.sin(angle);
+
+  const alignment = deriveAlignment(p);
+  const n = p.roles ? p.roles.length : 0;
+  const hasPie = n > 1;
+
+  const el = document.createElement('div');
+  el.className = `token${alignment ? ' ' + alignment : ''}${p.dead ? ' dead' : ''}${hasPie ? ' has-pie' : ''}${n >= 3 ? ' has-pie-3' : ''}`;
+  el.style.left = x + '%';
+  el.style.top = y + '%';
+
+  if (!hasPie) {
+    el.innerHTML = `
+      <div class="token-inner">
+        <span class="seat-number">${p.seat}</span>
+        ${p.roles && p.roles.length === 1 ? `<span class="role-guess-single">${p.roles[0]}</span>` : ''}
+      </div>
+    `;
+  } else {
+    const segDeg = 360 / n;
+    const fromDeg = n === 2 ? 270 : 0;
+
+    const shades = ['rgba(255,255,255,0.05)', 'rgba(0,0,0,0.08)'];
+    const gradStops = [];
+    for (let j = 0; j < n; j++) {
+      gradStops.push(`${shades[j % 2]} ${j * segDeg}deg ${(j + 1) * segDeg}deg`);
+    }
+
+    let dividersHtml = '';
+    for (let j = 0; j < n; j++) {
+      const rotDeg = fromDeg + j * segDeg - 90;
+      dividersHtml += `<div class="pie-divider" style="transform:rotate(${rotDeg}deg)"></div>`;
+    }
+
+    const sz = 68, cx = sz / 2, cy = sz / 2;
+    const labelR = n === 2 ? 18 : 19;
+    let labelsHtml = '';
+    for (let j = 0; j < n; j++) {
+      const midCssDeg = fromDeg + j * segDeg + segDeg / 2;
+      const midRad = (midCssDeg - 90) * Math.PI / 180;
+      const lx = cx + labelR * Math.cos(midRad);
+      const ly = cy + labelR * Math.sin(midRad);
+      labelsHtml += `<span class="role-guess" style="left:${lx.toFixed(1)}px;top:${ly.toFixed(1)}px">${p.roles[j]}</span>`;
+    }
+
+    el.innerHTML = `
+      <div class="token-inner">
+        <div class="pie-overlay" style="background:conic-gradient(from ${fromDeg}deg,${gradStops.join(',')})"></div>
+        ${dividersHtml}
+        <span class="seat-number">${p.seat}</span>
+        <div class="role-guesses">${labelsHtml}</div>
+      </div>
+    `;
+  }
+
+  el.addEventListener('click', () => openRolesSheet(i));
+  return el;
+}
+
+function renderBoard() {
+  // Remove old tokens (keep .board-center)
+  $board.querySelectorAll('.token').forEach(t => t.remove());
+
+  if (state.phase !== 'playing' || !state.players.length) return;
+
+  const total = state.players.length;
+  state.players.forEach((p, i) => {
+    $board.appendChild(renderToken(p, i, total));
+  });
+}
+
+// ══════════════════════════════════════
+// RENDER: SETUP SHEET
+// ══════════════════════════════════════
+
+function renderSetupSheet() {
+  $playersValue.textContent = state.playerCount;
+  document.getElementById('dist-townsfolk').textContent = state.distribution.townsfolk;
+  document.getElementById('dist-outsiders').textContent = state.distribution.outsiders;
+  document.getElementById('dist-minions').textContent = state.distribution.minions;
+  document.getElementById('dist-demons').textContent = state.distribution.demons;
+  document.getElementById('dist-travelers').textContent = state.distribution.travelers;
+  $btnBegin.textContent = state.phase === 'playing' ? 'Apply' : 'Begin';
+}
+
+// ══════════════════════════════════════
+// RENDER: ROLES SHEET
+// ══════════════════════════════════════
+
+function renderRolesSheet() {
+  if (currentSeat === null) return;
+  const player = state.players[currentSeat];
+  const playerRoles = player.roles || [];
+
+  $rolesSeat.textContent = player.seat;
+
+  // Death toggle
+  $deathToggle.textContent = player.dead ? 'Mark Alive' : 'Mark Dead';
+  $deathToggle.classList.toggle('is-dead', player.dead);
+
+  // Vote toggle
+  $voteToggle.classList.toggle('visible', player.dead);
+  $voteToggle.classList.toggle('has-vote', player.hasVote);
+  $voteToggle.textContent = player.hasVote ? 'Ghost Vote \u2714' : 'Ghost Vote \u2718';
+
+  // Build role groups
+  let html = '';
+  for (const [cat, info] of Object.entries(CATEGORY_LABELS)) {
+    const builtIn = ROLES[cat] || [];
+    const custom = state.customRoles[cat] || [];
+    const allRoles = [...builtIn, ...custom];
+
+    html += `<div class="roles-section">`;
+    html += `<div class="roles-group-header">
+      <span class="color-pip ${info.pipClass}"></span>
+      <span style="color:${info.color}">${info.name}</span>
+      <span class="line"></span>
+    </div>`;
+    html += `<div class="roles-grid">`;
+
+    for (const role of allRoles) {
+      const selected = playerRoles.includes(role);
+      html += `<div class="role-chip ${info.chipClass}${selected ? ' selected' : ''}" data-role="${role}" data-cat="${cat}">${role}</div>`;
+    }
+
+    html += `</div>`;
+    html += `<div class="role-add">
+      <input class="role-add-input" type="text" placeholder="Add custom ${cat}..." inputmode="text" autocomplete="off" data-cat="${cat}">
+      <button class="role-add-btn" data-cat="${cat}">+</button>
+    </div>`;
+    html += `</div>`;
+  }
+
+  $rolesContent.innerHTML = html;
+
+  // Bind chip clicks
+  $rolesContent.querySelectorAll('.role-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const role = chip.dataset.role;
+      toggleRole(currentSeat, role);
+    });
+  });
+
+  // Bind custom role add
+  $rolesContent.querySelectorAll('.role-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.cat;
+      const input = $rolesContent.querySelector(`.role-add-input[data-cat="${cat}"]`);
+      const name = input.value.trim();
+      if (!name) return;
+      addCustomRole(cat, name);
+      input.value = '';
+    });
+  });
+
+  // Enter key on custom inputs
+  $rolesContent.querySelectorAll('.role-add-input').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const cat = input.dataset.cat;
+        const name = input.value.trim();
+        if (!name) return;
+        addCustomRole(cat, name);
+        input.value = '';
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════
+// RENDER: MAIN
+// ══════════════════════════════════════
+
+function render() {
+  renderTally();
+  renderBoard();
+  renderSetupSheet();
+  if (currentSeat !== null) renderRolesSheet();
+}
+
+// ══════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════
+
+function setDistributionFromPlayerCount(count) {
+  const d = DEFAULT_DIST[count] || DEFAULT_DIST[15];
+  state.distribution.townsfolk = d[0];
+  state.distribution.outsiders = d[1];
+  state.distribution.minions = d[2];
+  state.distribution.demons = d[3];
+  // Don't reset travelers
+}
+
+function changePlayerCount(delta) {
+  const newCount = Math.max(5, Math.min(20, state.playerCount + delta));
+  if (newCount === state.playerCount) return;
+
+  if (state.phase === 'playing' && state.players.length > 0) {
+    if (!confirm('Changing player count will reset all player data. Continue?')) return;
+    state.players = [];
+    state.phase = 'setup';
+  }
+
+  state.playerCount = newCount;
+  setDistributionFromPlayerCount(newCount);
+  saveState();
+  render();
+}
+
+function changeDistribution(cat, delta) {
+  const key = cat === 'townsfolk' ? 'townsfolk' : cat;
+  const newVal = Math.max(0, (state.distribution[key] || 0) + delta);
+  state.distribution[key] = newVal;
+  saveState();
+  render();
+}
+
+function beginGame() {
+  state.players = [];
+  for (let i = 0; i < state.playerCount; i++) {
+    state.players.push({
+      seat: i + 1,
+      roles: [],
+      dead: false,
+      hasVote: true
+    });
+  }
+  state.phase = 'playing';
+  saveState();
+  closeAll();
+  render();
+}
+
+function resetGame() {
+  if (!confirm('Reset all game data?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = defaultState();
+  currentSeat = null;
+  closeAll();
+  render();
+  // Auto-open setup
+  setTimeout(() => openSheet($sheetSetup), 100);
+}
+
+function openRolesSheet(seatIndex) {
+  if (state.phase !== 'playing') return;
+  currentSeat = seatIndex;
+  renderRolesSheet();
+  openSheet($sheetRoles);
+}
+
+function toggleRole(seatIndex, role) {
+  const player = state.players[seatIndex];
+  if (!player.roles) player.roles = [];
+
+  const idx = player.roles.indexOf(role);
+  if (idx >= 0) {
+    player.roles.splice(idx, 1);
+  } else {
+    player.roles.push(role);
+  }
+
+  saveState();
+  renderRolesSheet();
+  renderBoard();
+  renderTally();
+}
+
+function toggleDeath(seatIndex) {
+  const player = state.players[seatIndex];
+  player.dead = !player.dead;
+  if (player.dead) player.hasVote = true;
+  saveState();
+  renderRolesSheet();
+  renderBoard();
+}
+
+function toggleVote(seatIndex) {
+  const player = state.players[seatIndex];
+  player.hasVote = !player.hasVote;
+  saveState();
+  renderRolesSheet();
+}
+
+function addCustomRole(cat, name) {
+  if (!state.customRoles[cat]) state.customRoles[cat] = [];
+  // Don't add duplicates
+  if (state.customRoles[cat].includes(name)) return;
+  if (ROLES[cat] && ROLES[cat].includes(name)) return;
+
+  state.customRoles[cat].push(name);
+  ROLE_CATEGORY[name] = cat;
+  saveState();
+  renderRolesSheet();
+}
+
+// ══════════════════════════════════════
+// EVENT BINDINGS
+// ══════════════════════════════════════
+
+// Setup button
+document.getElementById('btn-setup').addEventListener('click', () => {
+  renderSetupSheet();
+  openSheet($sheetSetup);
+});
+
+// Player count stepper
+document.getElementById('players-minus').addEventListener('click', () => changePlayerCount(-1));
+document.getElementById('players-plus').addEventListener('click', () => changePlayerCount(1));
+
+// Distribution steppers
+document.querySelectorAll('.mini-stepper-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const cat = btn.dataset.cat;
+    const dir = parseInt(btn.dataset.dir);
+    changeDistribution(cat, dir);
+  });
+});
+
+// Begin / Apply
+$btnBegin.addEventListener('click', () => {
+  if (state.phase === 'playing') {
+    // Apply — just close, distribution already saved
+    closeAll();
+  } else {
+    beginGame();
+  }
+});
+
+// Reset
+document.getElementById('btn-reset').addEventListener('click', resetGame);
+
+// Death toggle
+$deathToggle.addEventListener('click', () => {
+  if (currentSeat !== null) toggleDeath(currentSeat);
+});
+
+// Vote toggle
+$voteToggle.addEventListener('click', () => {
+  if (currentSeat !== null) toggleVote(currentSeat);
+});
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+
+render();
+
+if (state.phase === 'setup') {
+  setTimeout(() => openSheet($sheetSetup), 100);
+}
+</script>
+
+</body>
+</html>
