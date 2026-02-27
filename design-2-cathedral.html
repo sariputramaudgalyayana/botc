@@ -202,7 +202,8 @@
     text-shadow: 0 0 8px rgba(201,168,76,0.2);
   }
 
-  .token .role-guess {
+  /* ── Single role (no pie) ── */
+  .token .role-guess-single {
     font-size: 7px;
     color: #9a8a7a;
     text-transform: uppercase;
@@ -213,6 +214,64 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* ── Pie chart role guesses ── */
+  .token .role-guesses {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .token .role-guess {
+    position: absolute;
+    font-size: 7px;
+    color: #c8bda0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1;
+    text-align: center;
+    max-width: 38px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+  }
+
+  .pie-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .pie-divider {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 50%;
+    height: 1px;
+    background: rgba(201,168,76,0.18);
+    transform-origin: 0% 50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .token.has-pie .seat-number {
+    font-size: 17px;
+    position: relative;
+    z-index: 2;
+  }
+  .token.has-pie .token-inner::before { z-index: 3; }
+
+  /* 3+ roles — tighter */
+  .token.has-pie-3 .role-guess {
+    font-size: 5.5px;
+    max-width: 28px;
+  }
+  .token.has-pie-3 .seat-number {
+    font-size: 15px;
   }
 
   /* ── Alignment — colored light glow ── */
@@ -869,16 +928,16 @@
 <script>
   // ── Render board tokens ──
   const players = [
-    { seat: 1, role: null, alignment: null, dead: false },
-    { seat: 2, role: 'Washerwoman', alignment: 'townsfolk', dead: false },
-    { seat: 3, role: 'Imp', alignment: 'demon', dead: false },
-    { seat: 4, role: null, alignment: null, dead: false },
-    { seat: 5, role: 'Empath', alignment: 'townsfolk', dead: true },
-    { seat: 6, role: null, alignment: null, dead: false },
-    { seat: 7, role: 'Baron', alignment: 'minion', dead: false },
-    { seat: 8, role: 'Drunk', alignment: 'outsider', dead: false },
-    { seat: 9, role: 'Monk', alignment: 'townsfolk', dead: true },
-    { seat: 10, role: null, alignment: null, dead: false },
+    { seat: 1, roles: null, alignment: null, dead: false },
+    { seat: 2, roles: ['Washerwoman'], alignment: 'townsfolk', dead: false },
+    { seat: 3, roles: ['Imp', 'Poisoner'], alignment: 'demon', dead: false },
+    { seat: 4, roles: ['Chef', 'Investigator'], alignment: 'townsfolk', dead: false },
+    { seat: 5, roles: ['Empath'], alignment: 'townsfolk', dead: true },
+    { seat: 6, roles: null, alignment: null, dead: false },
+    { seat: 7, roles: ['Baron', 'Spy', 'Scarlet W.'], alignment: 'minion', dead: false },
+    { seat: 8, roles: ['Drunk', 'Saint'], alignment: 'outsider', dead: false },
+    { seat: 9, roles: ['Monk', 'Soldier', 'Mayor'], alignment: 'townsfolk', dead: true },
+    { seat: 10, roles: null, alignment: null, dead: false },
   ];
 
   const board = document.getElementById('board');
@@ -890,15 +949,61 @@
     const y = 50 + radius * Math.sin(angle);
 
     const el = document.createElement('div');
-    el.className = `token${p.alignment ? ' ' + p.alignment : ''}${p.dead ? ' dead' : ''}`;
+    const n = p.roles ? p.roles.length : 0;
+    const hasPie = n > 1;
+    el.className = `token${p.alignment ? ' ' + p.alignment : ''}${p.dead ? ' dead' : ''}${hasPie ? ' has-pie' : ''}${n >= 3 ? ' has-pie-3' : ''}`;
     el.style.left = x + '%';
     el.style.top = y + '%';
-    el.innerHTML = `
-      <div class="token-inner">
-        <span class="seat-number">${p.seat}</span>
-        ${p.role ? `<span class="role-guess">${p.role}</span>` : ''}
-      </div>
-    `;
+
+    if (!hasPie) {
+      // 0 or 1 role — simple layout
+      el.innerHTML = `
+        <div class="token-inner">
+          <span class="seat-number">${p.seat}</span>
+          ${p.roles ? `<span class="role-guess-single">${p.roles[0]}</span>` : ''}
+        </div>
+      `;
+    } else {
+      // Pie chart layout
+      const segDeg = 360 / n;
+      const fromDeg = n === 2 ? 270 : 0; // 2→top/bottom split, 3→even trisection
+
+      // Conic gradient (alternating subtle shades)
+      const shades = ['rgba(255,255,255,0.05)', 'rgba(0,0,0,0.08)'];
+      const gradStops = [];
+      for (let j = 0; j < n; j++) {
+        gradStops.push(`${shades[j % 2]} ${j * segDeg}deg ${(j + 1) * segDeg}deg`);
+      }
+
+      // Divider lines from center to edge
+      let dividersHtml = '';
+      for (let j = 0; j < n; j++) {
+        const rotDeg = fromDeg + j * segDeg - 90;
+        dividersHtml += `<div class="pie-divider" style="transform:rotate(${rotDeg}deg)"></div>`;
+      }
+
+      // Role labels positioned at each segment's midpoint
+      const sz = 68, cx = sz / 2, cy = sz / 2;
+      const labelR = n === 2 ? 18 : 19;
+      let labelsHtml = '';
+      for (let j = 0; j < n; j++) {
+        const midCssDeg = fromDeg + j * segDeg + segDeg / 2;
+        const midRad = (midCssDeg - 90) * Math.PI / 180;
+        const lx = cx + labelR * Math.cos(midRad);
+        const ly = cy + labelR * Math.sin(midRad);
+        labelsHtml += `<span class="role-guess" style="left:${lx.toFixed(1)}px;top:${ly.toFixed(1)}px">${p.roles[j]}</span>`;
+      }
+
+      el.innerHTML = `
+        <div class="token-inner">
+          <div class="pie-overlay" style="background:conic-gradient(from ${fromDeg}deg,${gradStops.join(',')})"></div>
+          ${dividersHtml}
+          <span class="seat-number">${p.seat}</span>
+          <div class="role-guesses">${labelsHtml}</div>
+        </div>
+      `;
+    }
+
     board.appendChild(el);
   });
 

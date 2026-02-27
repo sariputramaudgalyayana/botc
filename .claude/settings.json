@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo create botc --public --source=. --remote=origin)",
+      "Bash(gh repo view botc --json url --jq '.url')",
+      "Bash(gh api repos/sariputramaudgalyayana/botc/contents/ --jq '.[].name')",
+      "Bash(gh api repos/sariputramaudgalyayana/botc/pages/builds --jq '.[0] | {status, created_at}')",
+      "Bash(gh api repos/sariputramaudgalyayana/botc/pages/builds --jq '.[] | {status, created_at}')",
+      "Bash(gh api repos/sariputramaudgalyayana/botc/pages/builds -X POST)"
+    ],
+    "additionalDirectories": [
+      "/Users/urikamoment/hacking/botc/specs",
+      "/Users/urikamoment/Library/Mobile Documents/iCloud~md~obsidian/Documents/second-brain/balance/experiments/BoCT"
+    ]
+  }
+}

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BotC Board — Modern Dark</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f0d15;
+    --surface: #1a1722;
+    --surface-2: #22202c;
+    --border: rgba(255,255,255,0.06);
+    --text: #e0dce8;
+    --text-dim: rgba(255,255,255,0.4);
+    --accent: #c9a84c;
+    --town: #5b8fd0;
+    --outsider: #4aaa80;
+    --minion: #d08050;
+    --demon: #cc4444;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+  }
+  .header-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.04);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Tally chips ── */
+  .tally {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px;
+    flex-shrink: 0;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .chip .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .chip.town .dot { background: var(--town); }
+  .chip.out .dot { background: var(--outsider); }
+  .chip.min .dot { background: var(--minion); }
+  .chip.dem .dot { background: var(--demon); }
+
+  /* ── Main ── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 16px;
+  }
+
+  .board {
+    position: relative;
+    width: min(86vw, 86vh - 200px);
+    height: min(86vw, 86vh - 200px);
+    max-width: 500px;
+    max-height: 500px;
+  }
+
+  /* Subtle guide circle */
+  .guide-ring {
+    position: absolute;
+    inset: 6%;
+    border-radius: 50%;
+    border: 1px dashed rgba(255,255,255,0.03);
+  }
+
+  /* ── Token — glassmorphism ── */
+  .token {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    margin-left: -32px;
+    margin-top: -32px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1;
+  }
+
+  .token-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    background: rgba(30,28,40,0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .token .seat-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    line-height: 1;
+  }
+
+  .token .role-guess {
+    font-size: 8px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+    max-width: 56px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Alignment indicator — colored top border + left stripe */
+  .token .align-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .token[class*="folk"] .align-bar,
+  .token[class*="sider"] .align-bar,
+  .token.minion .align-bar,
+  .token.demon .align-bar { opacity: 1; }
+
+  .token.townsfolk .align-bar { background: var(--town); }
+  .token.townsfolk .seat-number { color: var(--town); }
+
+  .token.outsider .align-bar { background: var(--outsider); }
+  .token.outsider .seat-number { color: var(--outsider); }
+
+  .token.minion .align-bar { background: var(--minion); }
+  .token.minion .seat-number { color: var(--minion); }
+
+  .token.demon .align-bar { background: var(--demon); }
+  .token.demon .seat-number { color: var(--demon); }
+
+  /* ── Dead ── */
+  .token.dead .token-inner {
+    opacity: 0.4;
+    border-color: rgba(200,50,50,0.3);
+  }
+  .token.dead .death-badge {
+    display: flex;
+  }
+  .death-badge {
+    display: none;
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    background: #cc2222;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    box-shadow: 0 2px 8px rgba(200,30,30,0.4);
+  }
+  .death-badge svg {
+    width: 12px;
+    height: 12px;
+    fill: white;
+  }
+
+  /* ── Bottom Nav ── */
+  footer {
+    flex-shrink: 0;
+    padding: 8px 16px 12px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    flex: 1;
+    max-width: 160px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Clocktower</h1>
+  <span class="header-badge">10 players</span>
+</header>
+
+<div class="tally">
+  <div class="chip town"><span class="dot"></span>5</div>
+  <div class="chip out"><span class="dot"></span>1</div>
+  <div class="chip min"><span class="dot"></span>1</div>
+  <div class="chip dem"><span class="dot"></span>1</div>
+</div>
+
+<main>
+  <div class="board" id="board">
+    <div class="guide-ring"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="btn">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+    Setup
+  </button>
+  <button class="btn">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    Roles
+  </button>
+</footer>
+
+<!-- Skull SVG (referenced by death badge) -->
+<svg style="display:none">
+  <defs>
+    <symbol id="skull" viewBox="0 0 16 16">
+      <path d="M8 1C4.7 1 2 3.2 2 6c0 1.6.8 3 2 4v2c0 .6.4 1 1 1h1v1h4v-1h1c.6 0 1-.4 1-1v-2c1.2-1 2-2.4 2-4 0-2.8-2.7-5-6-5zM6 10.5a1 1 0 110-2 1 1 0 010 2zm4 0a1 1 0 110-2 1 1 0 010 2z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<script>
+  const players = [
+    { seat: 1, role: null, alignment: null, dead: false },
+    { seat: 2, role: 'Washerwoman', alignment: 'townsfolk', dead: false },
+    { seat: 3, role: 'Imp', alignment: 'demon', dead: false },
+    { seat: 4, role: null, alignment: null, dead: false },
+    { seat: 5, role: 'Empath', alignment: 'townsfolk', dead: true },
+    { seat: 6, role: null, alignment: null, dead: false },
+    { seat: 7, role: 'Baron', alignment: 'minion', dead: false },
+    { seat: 8, role: 'Drunk', alignment: 'outsider', dead: false },
+    { seat: 9, role: 'Monk', alignment: 'townsfolk', dead: true },
+    { seat: 10, role: null, alignment: null, dead: false },
+  ];
+
+  const board = document.getElementById('board');
+
+  players.forEach((p, i) => {
+    const angle = (2 * Math.PI * i / players.length) - Math.PI / 2;
+    const radius = 42;
+    const x = 50 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+
+    const el = document.createElement('div');
+    el.className = `token${p.alignment ? ' ' + p.alignment : ''}${p.dead ? ' dead' : ''}`;
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    el.innerHTML = `
+      <div class="token-inner">
+        <div class="align-bar"></div>
+        <span class="seat-number">${p.seat}</span>
+        ${p.role ? `<span class="role-guess">${p.role}</span>` : ''}
+      </div>
+      <div class="death-badge">
+        <svg viewBox="0 0 16 16"><use href="#skull"/></svg>
+      </div>
+    `;
+    board.appendChild(el);
+  });
+</script>
+
+</body>
+</html>

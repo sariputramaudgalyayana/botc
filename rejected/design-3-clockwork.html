@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BotC Board — Clockwork</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Cormorant:wght@400;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0c0a10;
+    color: #c8bda0;
+    font-family: 'Cormorant', serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 14px 16px 10px;
+    background: #0c0a10;
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+    flex-shrink: 0;
+    position: relative;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #c9a84c;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  /* Gear decoration */
+  header::after {
+    content: '⚙';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    opacity: 0.15;
+    color: #c9a84c;
+  }
+
+  /* ── Tally ── */
+  .tally {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .tally span { opacity: 0.5; }
+  .tally .t-town { color: #6a9ad5; }
+  .tally .t-out { color: #6aaa8a; }
+  .tally .t-min { color: #d07a5a; }
+  .tally .t-dem { color: #c94a4a; }
+
+  /* ── Main ── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 16px;
+  }
+
+  .board {
+    position: relative;
+    width: min(88vw, 88vh - 180px);
+    height: min(88vw, 88vh - 180px);
+    max-width: 520px;
+    max-height: 520px;
+  }
+
+  /* Clock face rings */
+  .clock-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.06);
+  }
+  .clock-ring.outer {
+    inset: 2%;
+  }
+  .clock-ring.inner {
+    inset: 15%;
+    border-style: dashed;
+    border-color: rgba(201,168,76,0.04);
+  }
+
+  /* Hour tick marks */
+  .tick {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    height: 46%;
+    transform-origin: bottom center;
+    pointer-events: none;
+  }
+  .tick::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 8px;
+    background: rgba(201,168,76,0.12);
+  }
+  .tick.major::before {
+    height: 14px;
+    width: 2px;
+    background: rgba(201,168,76,0.2);
+  }
+
+  /* Center hub */
+  .hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid rgba(201,168,76,0.15);
+    background: radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%);
+  }
+  .hub::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.3);
+  }
+
+  /* Clock hands (decorative) */
+  .hand {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: bottom center;
+    background: rgba(201,168,76,0.1);
+    border-radius: 1px;
+    z-index: 0;
+  }
+  .hand.hour {
+    width: 2px;
+    height: 18%;
+    transform: translate(-50%, -100%) rotate(30deg);
+  }
+  .hand.minute {
+    width: 1px;
+    height: 28%;
+    transform: translate(-50%, -100%) rotate(190deg);
+  }
+
+  /* ── Token ── */
+  .token {
+    position: absolute;
+    width: 62px;
+    height: 62px;
+    margin-left: -31px;
+    margin-top: -31px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1;
+  }
+
+  .token-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 45% 40%, #1e1828 0%, #12101a 100%);
+    border: 2px solid rgba(201,168,76,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  }
+
+  /* Brass ring effect */
+  .token-inner::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg,
+      rgba(201,168,76,0.3),
+      rgba(201,168,76,0.1),
+      rgba(201,168,76,0.3),
+      rgba(201,168,76,0.1),
+      rgba(201,168,76,0.3)
+    );
+    z-index: -1;
+    mask: radial-gradient(circle, transparent 85%, black 86%);
+    -webkit-mask: radial-gradient(circle, transparent 85%, black 86%);
+  }
+
+  .token .seat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #c9a84c;
+    line-height: 1;
+  }
+
+  .token .role-guess {
+    font-size: 7px;
+    color: #8a7a6a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+    max-width: 52px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Alignment ── */
+  .token.townsfolk .token-inner { border-color: rgba(90,140,210,0.4); }
+  .token.townsfolk .seat-number { color: #7ab0e8; }
+
+  .token.outsider .token-inner { border-color: rgba(70,160,120,0.4); }
+  .token.outsider .seat-number { color: #5ac08a; }
+
+  .token.minion .token-inner { border-color: rgba(200,110,70,0.4); }
+  .token.minion .seat-number { color: #d88a60; }
+
+  .token.demon .token-inner { border-color: rgba(180,50,50,0.5); }
+  .token.demon .seat-number { color: #e05050; }
+
+  /* ── Dead ── */
+  .token.dead .token-inner {
+    filter: saturate(0.15) brightness(0.5);
+    border-color: rgba(120,30,30,0.5);
+  }
+  .token.dead::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid rgba(120,30,30,0.6);
+    box-shadow: 0 0 10px rgba(120,30,30,0.3);
+  }
+  .skull-badge {
+    display: none;
+    position: absolute;
+    bottom: -4px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    background: #1a0a0a;
+    border: 1px solid #6a2020;
+    border-radius: 50%;
+    font-size: 10px;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+  }
+  .token.dead .skull-badge { display: flex; }
+
+  /* ── Footer ── */
+  footer {
+    flex-shrink: 0;
+    padding: 12px 16px 16px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  .btn {
+    padding: 10px 22px;
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 20px;
+    background: linear-gradient(180deg, #18141e 0%, #0e0c14 100%);
+    color: #c9a84c;
+    font-family: 'Cormorant', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Clocktower</h1>
+</header>
+
+<div class="tally">
+  <span class="t-town">Town 5</span>
+  <span class="t-out">Out 1</span>
+  <span class="t-min">Min 1</span>
+  <span class="t-dem">Dem 1</span>
+</div>
+
+<main>
+  <div class="board" id="board">
+    <div class="clock-ring outer"></div>
+    <div class="clock-ring inner"></div>
+    <div class="hand hour"></div>
+    <div class="hand minute"></div>
+    <div class="hub"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="btn">Setup</button>
+  <button class="btn">Roles</button>
+</footer>
+
+<script>
+  // Generate tick marks
+  const board = document.getElementById('board');
+  for (let i = 0; i < 60; i++) {
+    const tick = document.createElement('div');
+    tick.className = `tick${i % 5 === 0 ? ' major' : ''}`;
+    tick.style.transform = `rotate(${i * 6}deg)`;
+    board.appendChild(tick);
+  }
+
+  const players = [
+    { seat: 1, role: null, alignment: null, dead: false },
+    { seat: 2, role: 'Washerwoman', alignment: 'townsfolk', dead: false },
+    { seat: 3, role: 'Imp', alignment: 'demon', dead: false },
+    { seat: 4, role: null, alignment: null, dead: false },
+    { seat: 5, role: 'Empath', alignment: 'townsfolk', dead: true },
+    { seat: 6, role: null, alignment: null, dead: false },
+    { seat: 7, role: 'Baron', alignment: 'minion', dead: false },
+    { seat: 8, role: 'Drunk', alignment: 'outsider', dead: false },
+    { seat: 9, role: 'Monk', alignment: 'townsfolk', dead: true },
+    { seat: 10, role: null, alignment: null, dead: false },
+  ];
+
+  players.forEach((p, i) => {
+    const angle = (2 * Math.PI * i / players.length) - Math.PI / 2;
+    const radius = 41;
+    const x = 50 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+
+    const el = document.createElement('div');
+    el.className = `token${p.alignment ? ' ' + p.alignment : ''}${p.dead ? ' dead' : ''}`;
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    el.innerHTML = `
+      <div class="token-inner">
+        <span class="seat-number">${p.seat}</span>
+        ${p.role ? `<span class="role-guess">${p.role}</span>` : ''}
+      </div>
+      <div class="skull-badge">💀</div>
+    `;
+    board.appendChild(el);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BotC Board — Parchment & Velvet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #d4c5a0;
+    font-family: 'Cinzel', serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 12px 16px 8px;
+    background: linear-gradient(180deg, #1a1028 0%, #0a0a0a 100%);
+    border-bottom: 1px solid #3a2a5c;
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 18px;
+    color: #c9a84c;
+    text-shadow: 0 0 12px rgba(201,168,76,0.3);
+    letter-spacing: 2px;
+  }
+  header .subtitle {
+    font-size: 10px;
+    color: #8a7a9a;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── Main Board ── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 16px;
+  }
+
+  .board {
+    position: relative;
+    width: min(85vw, 85vh - 160px);
+    height: min(85vw, 85vh - 160px);
+    max-width: 500px;
+    max-height: 500px;
+  }
+
+  /* Faint circle guide */
+  .board::before {
+    content: '';
+    position: absolute;
+    inset: 8%;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.08);
+  }
+
+  /* ── Player Token ── */
+  .token {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    margin-left: -32px;
+    margin-top: -32px;
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .token-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 40% 35%, #e8dcc0 0%, #c9b88a 50%, #a89668 100%);
+    border: 2px solid #8a7a5c;
+    box-shadow:
+      0 2px 8px rgba(0,0,0,0.6),
+      inset 0 1px 2px rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Parchment texture overlay */
+  .token-inner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .token .seat-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #3a2a1c;
+    line-height: 1;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+  }
+
+  .token .role-guess {
+    font-size: 7px;
+    color: #5a4a3a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+    max-width: 54px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Alignment Colors ── */
+  .token.townsfolk .token-inner {
+    border-color: #4a7ab5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 6px rgba(74,122,181,0.3);
+  }
+  .token.townsfolk .role-guess { color: #2a4a7a; }
+
+  .token.outsider .token-inner {
+    border-color: #4a8a6a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 6px rgba(74,138,106,0.3);
+  }
+
+  .token.minion .token-inner {
+    border-color: #b05a3a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 6px rgba(176,90,58,0.3);
+  }
+  .token.minion .role-guess { color: #7a3a2a; }
+
+  .token.demon .token-inner {
+    border-color: #8a2a2a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 6px rgba(138,42,42,0.4);
+  }
+  .token.demon .role-guess { color: #6a1a1a; }
+
+  /* ── Dead State ── */
+  .token.dead .token-inner {
+    filter: saturate(0.3) brightness(0.7);
+  }
+  .token.dead::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid #8a2020;
+    box-shadow: 0 0 8px rgba(138,32,32,0.5);
+  }
+  .token.dead .skull {
+    display: flex;
+  }
+  .skull {
+    display: none;
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    border: 1px solid #8a2020;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    z-index: 2;
+  }
+
+  /* ── Footer Controls (placeholder) ── */
+  footer {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    background: linear-gradient(0deg, #1a1028 0%, #0a0a0a 100%);
+    border-top: 1px solid #3a2a5c;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border: 1px solid #3a2a5c;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #1e1530 0%, #140e22 100%);
+    color: #c9a84c;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Tally Bar ── */
+  .tally {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 6px 16px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: #0d0d0d;
+  }
+  .tally span { opacity: 0.6; }
+  .tally .t-town { color: #6a9ad5; }
+  .tally .t-out { color: #6aaa8a; }
+  .tally .t-min { color: #d07a5a; }
+  .tally .t-dem { color: #ba4a4a; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Clocktower</h1>
+  <div class="subtitle">Player Board</div>
+</header>
+
+<div class="tally">
+  <span class="t-town">Townsfolk: 5</span>
+  <span class="t-out">Outsiders: 1</span>
+  <span class="t-min">Minions: 1</span>
+  <span class="t-dem">Demon: 1</span>
+</div>
+
+<main>
+  <div class="board" id="board"></div>
+</main>
+
+<footer>
+  <button class="btn">Setup</button>
+  <button class="btn">Roles</button>
+</footer>
+
+<script>
+  const players = [
+    { seat: 1, role: null, alignment: null, dead: false },
+    { seat: 2, role: 'Washerwoman', alignment: 'townsfolk', dead: false },
+    { seat: 3, role: 'Imp', alignment: 'demon', dead: false },
+    { seat: 4, role: null, alignment: null, dead: false },
+    { seat: 5, role: 'Empath', alignment: 'townsfolk', dead: true },
+    { seat: 6, role: null, alignment: null, dead: false },
+    { seat: 7, role: 'Baron', alignment: 'minion', dead: false },
+    { seat: 8, role: null, alignment: null, dead: false },
+    { seat: 9, role: 'Monk', alignment: 'townsfolk', dead: true },
+    { seat: 10, role: null, alignment: null, dead: false },
+  ];
+
+  const board = document.getElementById('board');
+
+  players.forEach((p, i) => {
+    const angle = (2 * Math.PI * i / players.length) - Math.PI / 2;
+    const radius = 42;
+    const x = 50 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+
+    const el = document.createElement('div');
+    el.className = `token${p.alignment ? ' ' + p.alignment : ''}${p.dead ? ' dead' : ''}`;
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    el.innerHTML = `
+      <div class="token-inner">
+        <span class="seat-number">${p.seat}</span>
+        ${p.role ? `<span class="role-guess">${p.role}</span>` : ''}
+      </div>
+      <div class="skull">💀</div>
+    `;
+    board.appendChild(el);
+  });
+</script>
+
+</body>
+</html>

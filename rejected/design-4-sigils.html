@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BotC Board — Mystical Sigils</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Lora:wght@400;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #08060e;
+    color: #c0b090;
+    font-family: 'Lora', serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Ambient fog */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 70%, rgba(80,40,120,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 30%, rgba(40,20,80,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(60,30,100,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    animation: fog 20s ease-in-out infinite alternate;
+  }
+  @keyframes fog {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 14px 16px 10px;
+    position: relative;
+    z-index: 1;
+  }
+  header h1 {
+    font-family: 'MedievalSharp', serif;
+    font-size: 24px;
+    color: #b090d0;
+    text-shadow: 0 0 30px rgba(140,80,200,0.3), 0 0 60px rgba(100,50,160,0.15);
+    letter-spacing: 3px;
+  }
+  header .subtitle {
+    font-size: 10px;
+    color: rgba(180,150,210,0.4);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── Tally — floating runes ── */
+  .tally {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 16px;
+    z-index: 1;
+  }
+  .tally-rune {
+    width: 50px;
+    height: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .tally-rune::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    opacity: 0.08;
+  }
+  .tally-rune .num {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .tally-rune .lbl {
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.4;
+  }
+  .tally-rune.town .num { color: #6090d0; text-shadow: 0 0 10px rgba(96,144,208,0.3); }
+  .tally-rune.town::before { background: #6090d0; }
+  .tally-rune.out .num { color: #50a080; text-shadow: 0 0 10px rgba(80,160,128,0.3); }
+  .tally-rune.out::before { background: #50a080; }
+  .tally-rune.min .num { color: #d08050; text-shadow: 0 0 10px rgba(208,128,80,0.3); }
+  .tally-rune.min::before { background: #d08050; }
+  .tally-rune.dem .num { color: #c04040; text-shadow: 0 0 10px rgba(192,64,64,0.3); }
+  .tally-rune.dem::before { background: #c04040; }
+
+  /* ── Main ── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    padding: 16px;
+  }
+
+  .board {
+    position: relative;
+    width: min(86vw, 86vh - 180px);
+    height: min(86vw, 86vh - 180px);
+    max-width: 500px;
+    max-height: 500px;
+  }
+
+  /* Mystical circle — summoning ring */
+  .sigil-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(140,80,200,0.08);
+  }
+  .sigil-ring.outer { inset: 3%; }
+  .sigil-ring.mid {
+    inset: 12%;
+    border-style: dashed;
+    border-color: rgba(140,80,200,0.05);
+  }
+  .sigil-ring.inner {
+    inset: 35%;
+    border-color: rgba(140,80,200,0.06);
+  }
+
+  /* Pentagram lines (decorative) */
+  .penta-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 1px;
+    width: 30%;
+    transform-origin: left center;
+    background: linear-gradient(90deg, rgba(140,80,200,0.04), rgba(140,80,200,0.02));
+  }
+
+  /* Center glow */
+  .center-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(140,80,200,0.06) 0%, transparent 70%);
+  }
+  .center-glow::after {
+    content: '☽';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    color: rgba(140,80,200,0.12);
+  }
+
+  /* ── Token — glowing sigil circles ── */
+  .token {
+    position: absolute;
+    width: 66px;
+    height: 66px;
+    margin-left: -33px;
+    margin-top: -33px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1;
+  }
+
+  .token-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, rgba(20,15,30,0.95) 0%, rgba(10,8,16,0.98) 100%);
+    border: 1.5px solid rgba(140,80,200,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow:
+      0 0 20px rgba(140,80,200,0.05),
+      inset 0 0 15px rgba(140,80,200,0.03);
+  }
+
+  /* Orbiting particle effect (CSS only) */
+  .token-inner::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    border-top-color: rgba(140,80,200,0.1);
+    animation: orbit 8s linear infinite;
+  }
+  @keyframes orbit {
+    to { transform: rotate(360deg); }
+  }
+
+  .token .seat-number {
+    font-family: 'MedievalSharp', serif;
+    font-size: 22px;
+    color: #b090d0;
+    line-height: 1;
+    text-shadow: 0 0 12px rgba(140,80,200,0.3);
+  }
+
+  .token .role-guess {
+    font-size: 7px;
+    color: rgba(180,150,210,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+    max-width: 56px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Alignment — colored auras ── */
+  .token.townsfolk .token-inner {
+    border-color: rgba(80,130,210,0.3);
+    box-shadow: 0 0 25px rgba(80,130,210,0.08), inset 0 0 15px rgba(80,130,210,0.05);
+  }
+  .token.townsfolk .seat-number {
+    color: #7ab0e8;
+    text-shadow: 0 0 15px rgba(80,130,210,0.4);
+  }
+  .token.townsfolk .token-inner::after { border-top-color: rgba(80,130,210,0.15); }
+
+  .token.outsider .token-inner {
+    border-color: rgba(60,170,120,0.3);
+    box-shadow: 0 0 25px rgba(60,170,120,0.08), inset 0 0 15px rgba(60,170,120,0.05);
+  }
+  .token.outsider .seat-number {
+    color: #5ac08a;
+    text-shadow: 0 0 15px rgba(60,170,120,0.4);
+  }
+  .token.outsider .token-inner::after { border-top-color: rgba(60,170,120,0.15); }
+
+  .token.minion .token-inner {
+    border-color: rgba(210,110,60,0.3);
+    box-shadow: 0 0 25px rgba(210,110,60,0.08), inset 0 0 15px rgba(210,110,60,0.05);
+  }
+  .token.minion .seat-number {
+    color: #e09060;
+    text-shadow: 0 0 15px rgba(210,110,60,0.4);
+  }
+  .token.minion .token-inner::after { border-top-color: rgba(210,110,60,0.15); }
+
+  .token.demon .token-inner {
+    border-color: rgba(190,40,40,0.4);
+    box-shadow: 0 0 30px rgba(190,40,40,0.1), inset 0 0 20px rgba(190,40,40,0.06);
+  }
+  .token.demon .seat-number {
+    color: #e05050;
+    text-shadow: 0 0 20px rgba(190,40,40,0.5);
+  }
+  .token.demon .token-inner::after { border-top-color: rgba(190,40,40,0.2); }
+
+  /* ── Dead — extinguished ── */
+  .token.dead .token-inner {
+    filter: saturate(0.1) brightness(0.4);
+    border-color: rgba(100,20,20,0.4);
+  }
+  .token.dead .token-inner::after {
+    border-top-color: rgba(100,20,20,0.2);
+    animation-duration: 4s;
+  }
+  .token.dead .death-mark {
+    display: block;
+  }
+  .death-mark {
+    display: none;
+    position: absolute;
+    top: -5px;
+    right: -3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(100,20,20,0.8) 0%, rgba(60,10,10,0.9) 100%);
+    border: 1px solid rgba(150,40,40,0.5);
+    font-size: 10px;
+    line-height: 20px;
+    text-align: center;
+    z-index: 3;
+    box-shadow: 0 0 10px rgba(100,20,20,0.4);
+  }
+
+  /* ── Footer ── */
+  footer {
+    flex-shrink: 0;
+    padding: 12px 16px 16px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    z-index: 1;
+  }
+  .btn {
+    padding: 10px 24px;
+    border: 1px solid rgba(140,80,200,0.15);
+    border-radius: 20px;
+    background: rgba(15,10,25,0.8);
+    color: #b090d0;
+    font-family: 'Lora', serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+    text-shadow: 0 0 10px rgba(140,80,200,0.15);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Clocktower</h1>
+  <div class="subtitle">Divination Board</div>
+</header>
+
+<div class="tally">
+  <div class="tally-rune town"><span class="num">5</span><span class="lbl">Town</span></div>
+  <div class="tally-rune out"><span class="num">1</span><span class="lbl">Out</span></div>
+  <div class="tally-rune min"><span class="num">1</span><span class="lbl">Min</span></div>
+  <div class="tally-rune dem"><span class="num">1</span><span class="lbl">Dem</span></div>
+</div>
+
+<main>
+  <div class="board" id="board">
+    <div class="sigil-ring outer"></div>
+    <div class="sigil-ring mid"></div>
+    <div class="sigil-ring inner"></div>
+    <div class="center-glow"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="btn">Setup</button>
+  <button class="btn">Roles</button>
+</footer>
+
+<script>
+  const board = document.getElementById('board');
+
+  // Radiating lines from center
+  for (let i = 0; i < 12; i++) {
+    const line = document.createElement('div');
+    line.className = 'penta-line';
+    line.style.transform = `rotate(${i * 30}deg)`;
+    board.appendChild(line);
+  }
+
+  const players = [
+    { seat: 1, role: null, alignment: null, dead: false },
+    { seat: 2, role: 'Washerwoman', alignment: 'townsfolk', dead: false },
+    { seat: 3, role: 'Imp', alignment: 'demon', dead: false },
+    { seat: 4, role: null, alignment: null, dead: false },
+    { seat: 5, role: 'Empath', alignment: 'townsfolk', dead: true },
+    { seat: 6, role: null, alignment: null, dead: false },
+    { seat: 7, role: 'Baron', alignment: 'minion', dead: false },
+    { seat: 8, role: 'Drunk', alignment: 'outsider', dead: false },
+    { seat: 9, role: 'Monk', alignment: 'townsfolk', dead: true },
+    { seat: 10, role: null, alignment: null, dead: false },
+  ];
+
+  players.forEach((p, i) => {
+    const angle = (2 * Math.PI * i / players.length) - Math.PI / 2;
+    const radius = 42;
+    const x = 50 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+
+    const el = document.createElement('div');
+    el.className = `token${p.alignment ? ' ' + p.alignment : ''}${p.dead ? ' dead' : ''}`;
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    // Stagger orbit animations
+    el.style.setProperty('--delay', (i * 0.8) + 's');
+    el.innerHTML = `
+      <div class="token-inner" style="animation-delay: var(--delay)">
+        <span class="seat-number">${p.seat}</span>
+        ${p.role ? `<span class="role-guess">${p.role}</span>` : ''}
+      </div>
+      <div class="death-mark">💀</div>
+    `;
+    board.appendChild(el);
+  });
+</script>
+
+</body>
+</html>
