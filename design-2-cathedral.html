@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BotC Board — Gothic Cathedral</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Cormorant+Garamond:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0e0b14;
+    color: #c8bda0;
+    font-family: 'Cormorant Garamond', serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Stone texture background ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(60,40,90,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(60,40,90,0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header with pointed arch ── */
+  header {
+    position: relative;
+    text-align: center;
+    padding: 16px 16px 20px;
+    background: linear-gradient(180deg, #1c1528 0%, #0e0b14 100%);
+    z-index: 1;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 30px solid transparent;
+    border-right: 30px solid transparent;
+    border-top: 12px solid #0e0b14;
+  }
+  header h1 {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 22px;
+    color: #c9a84c;
+    text-shadow: 0 0 20px rgba(201,168,76,0.25);
+    letter-spacing: 3px;
+  }
+
+  /* ── Tally bar as stone tablets ── */
+  .tally {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 12px;
+    z-index: 1;
+    position: relative;
+  }
+  .tally-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 8px;
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 4px;
+    background: rgba(20,15,30,0.8);
+    min-width: 48px;
+  }
+  .tally-item .count {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .tally-item .label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.5;
+    margin-top: 2px;
+  }
+  .tally-item.town .count { color: #5b8fc9; }
+  .tally-item.out .count { color: #4a9a7a; }
+  .tally-item.min .count { color: #c97050; }
+  .tally-item.dem .count { color: #c94040; }
+  .tally-item.trav .count { color: #b090d0; }
+
+  /* ── Main Board ── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    padding: 20px;
+  }
+
+  .board {
+    position: relative;
+    width: min(82vw, 82vh - 200px);
+    height: min(82vw, 82vh - 200px);
+    max-width: 480px;
+    max-height: 480px;
+  }
+
+  /* Decorative circle — stained glass ring */
+  .board::before {
+    content: '';
+    position: absolute;
+    inset: 5%;
+    border-radius: 50%;
+    border: 2px solid rgba(201,168,76,0.06);
+    background: radial-gradient(circle, rgba(40,25,65,0.3) 0%, transparent 70%);
+  }
+
+  /* Cross in center */
+  .board-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    opacity: 0.08;
+  }
+  .board-center::before,
+  .board-center::after {
+    content: '';
+    position: absolute;
+    background: #c9a84c;
+  }
+  .board-center::before {
+    width: 2px;
+    height: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .board-center::after {
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* ── Player Token — stained glass window style ── */
+  .token {
+    position: absolute;
+    width: 68px;
+    height: 68px;
+    margin-left: -34px;
+    margin-top: -34px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .token-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #201838 0%, #140e22 100%);
+    border: 2px solid #3a2a5c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  /* Stained glass top arc */
+  .token-inner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 40%;
+    background: radial-gradient(ellipse at 50% 0%, rgba(100,70,160,0.15) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .token .seat-number {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 20px;
+    color: #c9a84c;
+    line-height: 1;
+    text-shadow: 0 0 8px rgba(201,168,76,0.2);
+  }
+
+  .token .role-guess {
+    font-size: 7px;
+    color: #9a8a7a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    max-width: 58px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Alignment — colored light glow ── */
+  .token.townsfolk .token-inner {
+    border-color: #4a6aaa;
+    box-shadow: inset 0 0 20px rgba(70,100,170,0.15), 0 0 12px rgba(70,100,170,0.2);
+  }
+  .token.townsfolk .seat-number { color: #7aaae0; }
+
+  .token.outsider .token-inner {
+    border-color: #3a7a5a;
+    box-shadow: inset 0 0 20px rgba(58,122,90,0.15), 0 0 12px rgba(58,122,90,0.2);
+  }
+  .token.outsider .seat-number { color: #5aba8a; }
+
+  .token.minion .token-inner {
+    border-color: #aa6040;
+    box-shadow: inset 0 0 20px rgba(170,96,64,0.15), 0 0 12px rgba(170,96,64,0.2);
+  }
+  .token.minion .seat-number { color: #da8a60; }
+
+  .token.demon .token-inner {
+    border-color: #8a2a2a;
+    box-shadow: inset 0 0 20px rgba(138,42,42,0.2), 0 0 12px rgba(138,42,42,0.3);
+  }
+  .token.demon .seat-number { color: #da5050; }
+
+  .token.traveler .token-inner {
+    border-color: #6a5a8a;
+    box-shadow: inset 0 0 20px rgba(120,90,170,0.15), 0 0 12px rgba(120,90,170,0.2);
+  }
+  .token.traveler .seat-number { color: #b090d0; }
+
+  /* ── Dead ── */
+  .token.dead .token-inner {
+    filter: saturate(0.2) brightness(0.5);
+  }
+  .token.dead::after {
+    content: '✝';
+    position: absolute;
+    top: -4px;
+    right: -2px;
+    font-size: 16px;
+    color: #8a2020;
+    text-shadow: 0 0 6px rgba(138,32,32,0.6);
+    z-index: 2;
+  }
+
+  /* ── Footer ── */
+  footer {
+    flex-shrink: 0;
+    padding: 12px 16px 16px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    z-index: 1;
+  }
+
+  .btn {
+    padding: 10px 24px;
+    border: 1px solid #3a2a5c;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #1e1530 0%, #120c1e 100%);
+    color: #c9a84c;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+    position: relative;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn:active {
+    background: linear-gradient(180deg, #2a1e40 0%, #1a1230 100%);
+    border-color: #4a3a6c;
+  }
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 20%;
+    right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+  }
+
+  /* ══════════════════════════════════════
+     OVERLAY / BACKDROP
+     ══════════════════════════════════════ */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,4,10,0.75);
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ══════════════════════════════════════
+     BOTTOM SHEET (shared)
+     ══════════════════════════════════════ */
+  .sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 85vh;
+    background: linear-gradient(180deg, #1c1528 0%, #120e1c 100%);
+    border-top: 1px solid rgba(201,168,76,0.15);
+    border-radius: 16px 16px 0 0;
+    z-index: 11;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sheet.open {
+    transform: translateY(0);
+  }
+
+  /* Drag handle */
+  .sheet-handle {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, #1c1528 90%, transparent);
+    z-index: 1;
+  }
+  .sheet-handle span {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(201,168,76,0.2);
+  }
+
+  .sheet-title {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 18px;
+    color: #c9a84c;
+    text-align: center;
+    padding: 4px 16px 16px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(201,168,76,0.2);
+  }
+
+  .sheet-divider {
+    height: 1px;
+    margin: 0 24px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.12), transparent);
+  }
+
+  /* ══════════════════════════════════════
+     SETUP SHEET
+     ══════════════════════════════════════ */
+  .setup-section {
+    padding: 16px 20px;
+  }
+  .setup-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(201,168,76,0.4);
+    margin-bottom: 12px;
+  }
+
+  /* Player count stepper */
+  .stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .stepper-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #3a2a5c;
+    background: linear-gradient(145deg, #201838 0%, #140e22 100%);
+    color: #c9a84c;
+    font-size: 22px;
+    font-family: 'Cormorant Garamond', serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s;
+  }
+  .stepper-btn:active {
+    border-color: #5a4a7c;
+  }
+  .stepper-value {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 36px;
+    color: #c9a84c;
+    min-width: 50px;
+    text-align: center;
+    text-shadow: 0 0 15px rgba(201,168,76,0.2);
+  }
+
+  /* Role count rows */
+  .role-count-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+  }
+  .role-count-row + .role-count-row {
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
+  .role-count-label {
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .role-count-label .color-pip {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .color-pip.town { background: #5b8fc9; }
+  .color-pip.out { background: #4a9a7a; }
+  .color-pip.min { background: #c97050; }
+  .color-pip.dem { background: #c94040; }
+  .color-pip.trav { background: #b090d0; }
+
+  .mini-stepper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mini-stepper-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #3a2a5c;
+    background: rgba(20,15,30,0.8);
+    color: #c9a84c;
+    font-size: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mini-stepper-val {
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    color: #c8bda0;
+  }
+
+  /* Confirm button */
+  .sheet-confirm {
+    display: block;
+    width: calc(100% - 40px);
+    margin: 16px 20px 24px;
+    padding: 14px;
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 4px;
+    background: linear-gradient(180deg, #2a1e3c 0%, #1a1228 100%);
+    color: #c9a84c;
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 15px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    min-height: 48px;
+    position: relative;
+  }
+  .sheet-confirm::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3), transparent);
+  }
+
+  /* ══════════════════════════════════════
+     ROLES SHEET
+     ══════════════════════════════════════ */
+  .roles-section {
+    padding: 12px 20px;
+  }
+  .roles-group-header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 8px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .roles-group-header .color-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .roles-group-header .line {
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .roles-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+  .role-chip {
+    padding: 8px 14px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(20,15,30,0.6);
+    font-size: 12px;
+    font-weight: 600;
+    color: #c8bda0;
+    cursor: pointer;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .role-chip:active {
+    background: rgba(30,22,44,0.8);
+  }
+  /* Selected state example */
+  .role-chip.selected {
+    border-color: rgba(201,168,76,0.4);
+    background: rgba(201,168,76,0.08);
+    color: #c9a84c;
+  }
+
+  .role-chip.town-chip.selected { border-color: rgba(91,143,201,0.5); background: rgba(91,143,201,0.08); color: #7aaae0; }
+  .role-chip.out-chip.selected { border-color: rgba(74,154,122,0.5); background: rgba(74,154,122,0.08); color: #5aba8a; }
+  .role-chip.min-chip.selected { border-color: rgba(201,112,80,0.5); background: rgba(201,112,80,0.08); color: #da8a60; }
+  .role-chip.dem-chip.selected { border-color: rgba(201,64,64,0.5); background: rgba(201,64,64,0.08); color: #da5050; }
+  .role-chip.trav-chip.selected { border-color: rgba(176,144,208,0.5); background: rgba(176,144,208,0.08); color: #b090d0; }
+
+  /* Player indicator at top of roles sheet */
+  .roles-player-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 20px 8px;
+  }
+  .roles-player-seat {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #201838 0%, #140e22 100%);
+    border: 2px solid #3a2a5c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 18px;
+    color: #c9a84c;
+  }
+  .roles-player-text {
+    font-size: 13px;
+    color: rgba(200,190,160,0.5);
+    letter-spacing: 1px;
+  }
+
+  /* ── Custom role input ── */
+  .role-add {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .role-add-input {
+    flex: 1;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    background: rgba(14,10,22,0.6);
+    color: #c8bda0;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .role-add-input::placeholder {
+    color: rgba(200,190,160,0.25);
+    font-style: italic;
+  }
+  .role-add-input:focus {
+    border-color: rgba(201,168,76,0.3);
+  }
+  .role-add-btn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 4px;
+    background: rgba(201,168,76,0.06);
+    color: #c9a84c;
+    font-size: 18px;
+    font-family: 'Cormorant Garamond', serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .role-add-btn:active {
+    background: rgba(201,168,76,0.12);
+    border-color: rgba(201,168,76,0.4);
+  }
+
+  /* Safe area padding */
+  .sheet-bottom-pad {
+    height: env(safe-area-inset-bottom, 8px);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Clocktower</h1>
+</header>
+
+<div class="tally">
+  <div class="tally-item town"><span class="count">5</span><span class="label">Town</span></div>
+  <div class="tally-item out"><span class="count">1</span><span class="label">Out</span></div>
+  <div class="tally-item min"><span class="count">1</span><span class="label">Min</span></div>
+  <div class="tally-item dem"><span class="count">1</span><span class="label">Dem</span></div>
+  <div class="tally-item trav"><span class="count">0</span><span class="label">Trav</span></div>
+</div>
+
+<main>
+  <div class="board" id="board">
+    <div class="board-center"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="btn" id="btn-setup">Setup</button>
+  <button class="btn" id="btn-roles">Roles</button>
+</footer>
+
+<!-- ── Overlay backdrop ── -->
+<div class="overlay" id="overlay"></div>
+
+<!-- ══ SETUP SHEET ══ -->
+<div class="sheet" id="sheet-setup">
+  <div class="sheet-handle"><span></span></div>
+  <div class="sheet-title">Setup</div>
+
+  <div class="sheet-divider"></div>
+
+  <div class="setup-section">
+    <div class="setup-section-label">Players</div>
+    <div class="stepper">
+      <button class="stepper-btn">−</button>
+      <span class="stepper-value">10</span>
+      <button class="stepper-btn">+</button>
+    </div>
+  </div>
+
+  <div class="sheet-divider"></div>
+
+  <div class="setup-section">
+    <div class="setup-section-label">Role Distribution</div>
+
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip town"></span>Townsfolk</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn">−</button>
+        <span class="mini-stepper-val">5</span>
+        <button class="mini-stepper-btn">+</button>
+      </div>
+    </div>
+
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip out"></span>Outsiders</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn">−</button>
+        <span class="mini-stepper-val">1</span>
+        <button class="mini-stepper-btn">+</button>
+      </div>
+    </div>
+
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip min"></span>Minions</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn">−</button>
+        <span class="mini-stepper-val">1</span>
+        <button class="mini-stepper-btn">+</button>
+      </div>
+    </div>
+
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip dem"></span>Demons</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn">−</button>
+        <span class="mini-stepper-val">1</span>
+        <button class="mini-stepper-btn">+</button>
+      </div>
+    </div>
+
+    <div class="role-count-row">
+      <span class="role-count-label"><span class="color-pip trav"></span>Travelers</span>
+      <div class="mini-stepper">
+        <button class="mini-stepper-btn">−</button>
+        <span class="mini-stepper-val">0</span>
+        <button class="mini-stepper-btn">+</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="sheet-confirm">Begin</button>
+  <div class="sheet-bottom-pad"></div>
+</div>
+
+<!-- ══ ROLES SHEET ══ -->
+<div class="sheet" id="sheet-roles">
+  <div class="sheet-handle"><span></span></div>
+  <div class="sheet-title">Assign Role</div>
+
+  <div class="roles-player-indicator">
+    <div class="roles-player-seat">3</div>
+    <span class="roles-player-text">Select role guesses</span>
+  </div>
+
+  <div class="sheet-divider"></div>
+
+  <!-- Townsfolk -->
+  <div class="roles-section">
+    <div class="roles-group-header">
+      <span class="color-pip town"></span>
+      <span style="color:#5b8fc9;">Townsfolk</span>
+      <span class="line"></span>
+    </div>
+    <div class="roles-grid">
+      <div class="role-chip town-chip">Washerwoman</div>
+      <div class="role-chip town-chip">Librarian</div>
+      <div class="role-chip town-chip">Investigator</div>
+      <div class="role-chip town-chip selected">Chef</div>
+      <div class="role-chip town-chip">Empath</div>
+      <div class="role-chip town-chip">Fortune Teller</div>
+      <div class="role-chip town-chip">Undertaker</div>
+      <div class="role-chip town-chip">Monk</div>
+      <div class="role-chip town-chip">Ravenkeeper</div>
+      <div class="role-chip town-chip">Virgin</div>
+      <div class="role-chip town-chip">Slayer</div>
+      <div class="role-chip town-chip">Soldier</div>
+      <div class="role-chip town-chip">Mayor</div>
+    </div>
+    <div class="role-add">
+      <input class="role-add-input" type="text" placeholder="Add custom townsfolk..." inputmode="text" autocomplete="off">
+      <button class="role-add-btn">+</button>
+    </div>
+  </div>
+
+  <!-- Outsiders -->
+  <div class="roles-section">
+    <div class="roles-group-header">
+      <span class="color-pip out"></span>
+      <span style="color:#4a9a7a;">Outsiders</span>
+      <span class="line"></span>
+    </div>
+    <div class="roles-grid">
+      <div class="role-chip out-chip">Butler</div>
+      <div class="role-chip out-chip">Drunk</div>
+      <div class="role-chip out-chip">Recluse</div>
+      <div class="role-chip out-chip">Saint</div>
+    </div>
+    <div class="role-add">
+      <input class="role-add-input" type="text" placeholder="Add custom outsider..." inputmode="text" autocomplete="off">
+      <button class="role-add-btn">+</button>
+    </div>
+  </div>
+
+  <!-- Minions -->
+  <div class="roles-section">
+    <div class="roles-group-header">
+      <span class="color-pip min"></span>
+      <span style="color:#c97050;">Minions</span>
+      <span class="line"></span>
+    </div>
+    <div class="roles-grid">
+      <div class="role-chip min-chip">Poisoner</div>
+      <div class="role-chip min-chip">Spy</div>
+      <div class="role-chip min-chip selected">Scarlet Woman</div>
+      <div class="role-chip min-chip">Baron</div>
+    </div>
+    <div class="role-add">
+      <input class="role-add-input" type="text" placeholder="Add custom minion..." inputmode="text" autocomplete="off">
+      <button class="role-add-btn">+</button>
+    </div>
+  </div>
+
+  <!-- Demons -->
+  <div class="roles-section">
+    <div class="roles-group-header">
+      <span class="color-pip dem"></span>
+      <span style="color:#c94040;">Demons</span>
+      <span class="line"></span>
+    </div>
+    <div class="roles-grid">
+      <div class="role-chip dem-chip">Imp</div>
+    </div>
+    <div class="role-add">
+      <input class="role-add-input" type="text" placeholder="Add custom demon..." inputmode="text" autocomplete="off">
+      <button class="role-add-btn">+</button>
+    </div>
+  </div>
+
+  <!-- Travelers -->
+  <div class="roles-section">
+    <div class="roles-group-header">
+      <span class="color-pip trav"></span>
+      <span style="color:#b090d0;">Travelers</span>
+      <span class="line"></span>
+    </div>
+    <div class="roles-grid">
+      <div class="role-chip trav-chip">Scapegoat</div>
+      <div class="role-chip trav-chip">Gunslinger</div>
+      <div class="role-chip trav-chip">Beggar</div>
+      <div class="role-chip trav-chip">Bureaucrat</div>
+      <div class="role-chip trav-chip">Thief</div>
+    </div>
+    <div class="role-add">
+      <input class="role-add-input" type="text" placeholder="Add custom traveler..." inputmode="text" autocomplete="off">
+      <button class="role-add-btn">+</button>
+    </div>
+  </div>
+
+  <div class="sheet-bottom-pad"></div>
+</div>
+
+<script>
+  // ── Render board tokens ──
+  const players = [
+    { seat: 1, role: null, alignment: null, dead: false },
+    { seat: 2, role: 'Washerwoman', alignment: 'townsfolk', dead: false },
+    { seat: 3, role: 'Imp', alignment: 'demon', dead: false },
+    { seat: 4, role: null, alignment: null, dead: false },
+    { seat: 5, role: 'Empath', alignment: 'townsfolk', dead: true },
+    { seat: 6, role: null, alignment: null, dead: false },
+    { seat: 7, role: 'Baron', alignment: 'minion', dead: false },
+    { seat: 8, role: 'Drunk', alignment: 'outsider', dead: false },
+    { seat: 9, role: 'Monk', alignment: 'townsfolk', dead: true },
+    { seat: 10, role: null, alignment: null, dead: false },
+  ];
+
+  const board = document.getElementById('board');
+
+  players.forEach((p, i) => {
+    const angle = (2 * Math.PI * i / players.length) - Math.PI / 2;
+    const radius = 42;
+    const x = 50 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+
+    const el = document.createElement('div');
+    el.className = `token${p.alignment ? ' ' + p.alignment : ''}${p.dead ? ' dead' : ''}`;
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    el.innerHTML = `
+      <div class="token-inner">
+        <span class="seat-number">${p.seat}</span>
+        ${p.role ? `<span class="role-guess">${p.role}</span>` : ''}
+      </div>
+    `;
+    board.appendChild(el);
+  });
+
+  // ── Sheet open/close ──
+  const overlay = document.getElementById('overlay');
+  const sheetSetup = document.getElementById('sheet-setup');
+  const sheetRoles = document.getElementById('sheet-roles');
+
+  function openSheet(sheet) {
+    overlay.classList.add('open');
+    sheet.classList.add('open');
+  }
+
+  function closeAll() {
+    overlay.classList.remove('open');
+    sheetSetup.classList.remove('open');
+    sheetRoles.classList.remove('open');
+  }
+
+  document.getElementById('btn-setup').addEventListener('click', () => openSheet(sheetSetup));
+  document.getElementById('btn-roles').addEventListener('click', () => openSheet(sheetRoles));
+  overlay.addEventListener('click', closeAll);
+
+  // Close sheets on handle tap
+  document.querySelectorAll('.sheet-handle').forEach(h => {
+    h.addEventListener('click', closeAll);
+  });
+</script>
+
+</body>
+</html>
