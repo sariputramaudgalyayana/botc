@@ -239,9 +239,12 @@ Each group has:
 - Custom roles can be removed (long-press or X button — TBD, keep simple for v1: no removal)
 
 **Closing the roles sheet**:
-- Tap overlay, tap handle, or tap "Done" (if added)
+- Tap overlay, tap handle, or tap the bottom button
+- Bottom button text: "Close" when no roles selected, "Accept" when one or more roles selected
+- Both button states perform the same action: close the sheet
 - Saves selected roles to `state.players[seat].roles`
 - Token on board immediately updates to reflect new guesses
+- Sheet does NOT auto-close after role selection
 
 ### Death toggle
 

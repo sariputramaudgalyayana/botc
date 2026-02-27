@@ -586,6 +586,7 @@
 
   <div id="roles-content"></div>
 
+  <button class="sheet-confirm" id="btn-roles-close">Close</button>
   <div class="sheet-bottom-pad"></div>
 </div>
 
@@ -703,6 +704,7 @@ const $rolesSeat = document.getElementById('roles-seat');
 const $rolesContent = document.getElementById('roles-content');
 const $deathToggle = document.getElementById('death-toggle');
 const $voteToggle = document.getElementById('vote-toggle');
+const $btnRolesClose = document.getElementById('btn-roles-close');
 
 // ══════════════════════════════════════
 // SHEETS
@@ -853,6 +855,9 @@ function renderRolesSheet() {
   $voteToggle.classList.toggle('visible', player.dead);
   $voteToggle.classList.toggle('has-vote', player.hasVote);
   $voteToggle.textContent = player.hasVote ? 'Ghost Vote \u2714' : 'Ghost Vote \u2718';
+
+  // Update close button text
+  $btnRolesClose.textContent = playerRoles.length > 0 ? 'Accept' : 'Close';
 
   // Build role groups
   let html = '';
@@ -1091,6 +1096,9 @@ $deathToggle.addEventListener('click', () => {
 $voteToggle.addEventListener('click', () => {
   if (currentSeat !== null) toggleVote(currentSeat);
 });
+
+// Roles sheet close button
+$btnRolesClose.addEventListener('click', closeAll);
 
 // ══════════════════════════════════════
 // INIT
